@@ -1,7 +1,7 @@
 import express from "express";
 import { auth, db } from "./database.js";
 import { ENUMERATOR } from "./roles.js";
-import { generatePassword } from "./util.js";
+import { generatePassword, sendEmail } from "./util.js";
 
 const router = express.Router();
 
@@ -39,7 +39,7 @@ router.post("/enroll-enumerator", async (req, res) => {
       };
       await collectionRef.doc(userRecord.uid).set(data);
 
-      console.log("Correo enviado:", registerData); // TODO: Send email
+      await sendEmail(registerData.email, registerData.password);
 
       res.json({
         message: "Empadronador inscrito, favor de revisar el correo registrado",
