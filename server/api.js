@@ -39,7 +39,11 @@ router.post("/enroll-enumerator", async (req, res) => {
       };
       await collectionRef.doc(userRecord.uid).set(data);
 
-      await sendEmail(registerData.email, registerData.password);
+      await sendEmail(
+        personData.name,
+        registerData.email,
+        registerData.password
+      );
 
       res.json({
         message: "Empadronador inscrito, favor de revisar el correo registrado",
