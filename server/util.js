@@ -61,6 +61,7 @@ export const enrollPerson = async (req, res, role) => {
       const collectionRef = db.collection("users");
       const data = {
         name: personData.name,
+        recidencePlace: personData.recidencePlace,
         ci,
         role: role,
       };
@@ -79,4 +80,25 @@ export const enrollPerson = async (req, res, role) => {
     console.error(error);
     res.status(401).json({ message: "Acción no permitida" });
   }
+};
+
+export const transformString = (str) => {
+  const accents = {
+    á: "a",
+    Á: "A",
+    é: "e",
+    É: "E",
+    í: "i",
+    Í: "I",
+    ó: "o",
+    Ó: "O",
+    ú: "u",
+    Ú: "U",
+    ü: "u",
+    Ü: "U",
+  };
+  return str
+    .replace(/[áÁéÉíÍóÓúÚüÜ]/gi, (match) => accents[match])
+    .replace(/[\s\n]/g, "");
+  // .toUpperCase();
 };
