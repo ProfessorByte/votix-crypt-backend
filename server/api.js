@@ -152,4 +152,61 @@ router.post("/process-results", async (req, res) => {
   }
 });
 
+router.get("/verify-vote/:ci", async (req, res) => {
+  const { ci } = req.params;
+
+  const electionsRef = db.collection("elections");
+  const electionsQuery = electionsRef.where("current", "==", true);
+  const electionsSnapshot = await electionsQuery.get();
+
+  const usersRef = db.collection("users");
+  const usersQuery = usersRef.where("ci", "==", ci);
+  const usersSnapshot = await usersQuery.get();
+
+  if (electionsSnapshot.empty) {
+    res.status(401).json({ message: "No hay elecciones activas" });
+    return;
+  }
+
+  if (usersSnapshot.empty) {
+    res.status(401).json({ message: "Persona no encontrada" });
+    return;
+  }
+
+  const currentPersonData = usersSnapshot.docs[0].data();
+
+  if (!currentPersonData.vote) {
+    res.json({ message: "Voto no encontrado" });
+    return;
+  }
+
+  const currentElection = electionsSnapshot.docs[0].data();
+
+  const pkBytes = CryptoJS.AES.decrypt(
+    currentElection.privateKey,
+    process.env.PASSWORD_PRIVATE_KEY
+  );
+  const decryptedPkData = JSON.parse(pkBytes.toString(CryptoJS.enc.Utf8));
+
+  const publicKey = new paillierBigint.PublicKey(
+    BigInt(currentElection.publicKey.n),
+    BigInt(currentElection.publicKey.g)
+  );
+  const privateKey = new paillierBigint.PrivateKey(
+    BigInt(decryptedPkData.lambda),
+    BigInt(decryptedPkData.mu),
+    publicKey
+  );
+
+  const userVotesHSum = publicKey.addition(
+    ...Object.values(currentPersonData.vote).map(BigInt)
+  );
+  const userVotesSum = userVotesHSum ? privateKey.decrypt(userVotesHSum) : 0n;
+
+  if (userVotesSum === 1n) {
+    res.json({ message: "Voto válido" });
+    return;
+  }
+});
+
 export default router;
